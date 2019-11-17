@@ -34,14 +34,25 @@ function knn(testPoint, k) {
         .reduce((sum, tensor) => sum + tensor.dataSync()[1], 0) / k; 
 }
 
-function accuracyOfKs(range = [1, 20]) {
+function accuracyOfKs([rBegin, rEnd] = [1, 20]) {
     console.log('Accuracy of Ks...');
-    const results = [...Array(range[1]).keys()].map(
-        k => testFeatures.dataSync().filter(
-            testPoint => knn(testPoint, k) == // TODO
+    const numberOfTests = splitTest;
+    const kTensor = tf.range(rBegin, rEnd + 1);
+    const tests = tf
+        .stack(
+            kTensor
+                .unstack()
+                .map(k => tf.fill([numberOfTests], k.arraySync()))
+                .map(ks => ks.expandDims(1).concat(testLabels, 1).concat(testFeatures, 1))
         )
-    );
-    console.table(results);
+        .reshape([-1, 4]) // 3d to 2d
+        .arraySync()
+        .map(([tK, tLabel, ...tFeatures]) => ([tK, knn(tf.stack(tFeatures), tK), tLabel, ...tFeatures]));
+
+    const kAnalysis = tf
+        .tensor(tests)
+        .print();
+    // const result = tests.filter( ( [tK, tPrediction, tLabel, ...tFeatures] ) => 
 }
 
 function predict(input) {
