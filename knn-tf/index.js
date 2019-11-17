@@ -49,6 +49,7 @@ function accuracyOfKs([rBegin, rEnd] = [1, 20]) {
         .arraySync()
         .map(([tK, tLabel, ...tFeatures]) => ([tK, knn(tf.stack(tFeatures), tK), tLabel, ...tFeatures]));
 
+    // TODO: Group by "K", sum prediction differences, sort from smaller to bigger
     const kAnalysis = tf
         .tensor(tests)
         .print();
