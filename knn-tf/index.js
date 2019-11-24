@@ -48,14 +48,14 @@ function prepare(numberOfTests = 10) {
             tests
             // cur shape: [tests, k's]
             .unstack(1)
-            .map(testPredictions =>  tf.metrics.meanSquaredError(testLabels.reshape([-1]), testPredictions))
+            .map(testPredictions =>  tf.metrics.meanAbsolutePercentageError(testLabels.reshape([-1]), testPredictions))
         )
             .unstack()
             // generate [k, mseSum]
             .map((mseSum, kIdx) => ([kIdx + rBegin, mseSum.arraySync()]))
             // sort from smaller to biggest
             .sort((prev, next) => prev[1] - next[1]);
-        console.log('from more accurate to less acurate');
+        console.log('from more accurate to less accurate');
         console.table(results);
         return results;
     }
