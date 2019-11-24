@@ -38,26 +38,38 @@ function accuracyOfKs([rBegin, rEnd] = [1, 20]) {
     console.log('Accuracy of Ks...');
     const numberOfTests = splitTest;
     const kTensor = tf.range(rBegin, rEnd + 1);
-    const tests = tf
-        .stack(
-            kTensor
-                .unstack()
-                .map(k => tf.fill([numberOfTests], k.arraySync()))
-                .map(ks => ks.expandDims(1).concat(testLabels, 1).concat(testFeatures, 1))
-        )
-        .reshape([-1, 4]) // 3d to 2d
-        .arraySync()
-        .map(([tK, tLabel, ...tFeatures]) => ([tK, knn(tf.stack(tFeatures), tK), tLabel, ...tFeatures]));
-
-    // TODO: Group by "K", sum prediction differences, sort from smaller to bigger
-    const kAnalysis = tf
-        .tensor(tests)
-        .print();
-    // const result = tests.filter( ( [tK, tPrediction, tLabel, ...tFeatures] ) => 
+    const tests = tf.stack(
+        kTensor
+            .unstack()
+            .map(k => tf.fill([numberOfTests], k.arraySync()))
+            .map(ks => ks.expandDims(1).concat(testLabels, 1).concat(testFeatures, 1))
+    )
+    .reshape([-1, 4]) // 3d to 2d
+    .arraySync()
+    // Group by "K", sum prediction differences
+    .reduce((prevDiffs, [tK, tLabel, ...tFeatures]) => {
+        const tDiff = Math.abs(tLabel - knn(tf.stack(tFeatures), tK));
+        const lastDiffIdx = prevDiffs.length - 1;
+        const [lastDiffTk, lastDiffVal] = lastDiffIdx > -1?prevDiffs[lastDiffIdx]:[];
+        // console.log(lastDiffTk, lastDiffVal, tK, tDiff);
+        if (lastDiffTk === tK) {
+            prevDiffs[lastDiffIdx] = [tK, (lastDiffVal || 0) + tDiff];
+        } else {
+            prevDiffs.push([tK, tDiff]);
+        }
+        console.clear();
+        console.table(prevDiffs);
+        return prevDiffs;
+    }, [])
+    // sort from smaller to bigger
+    .sort((diffA, diffB) => diffA[1] - diffB[1]);
+    console.clear();
+    console.table(tests);
+    return tf.stack(tests);
 }
 
-function predict(input) {
-    const prediction = knn(input, 10) ;
+function predict(input, k = 10) {
+    const prediction = knn(input, k) ;
     console.log('prediction', prediction);
 }
 
