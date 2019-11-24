@@ -37,35 +37,27 @@ function knn(testPoint, k) {
 function accuracyOfKs([rBegin, rEnd] = [1, 20]) {
     console.log('Accuracy of Ks...');
     const numberOfTests = splitTest;
-    const kTensor = tf.range(rBegin, rEnd + 1);
-    const tests = tf.stack(
-        kTensor
-            .unstack()
-            .map(k => tf.fill([numberOfTests], k.arraySync()))
-            .map(ks => ks.expandDims(1).concat(testLabels, 1).concat(testFeatures, 1))
-    )
-    .reshape([-1, 4]) // 3d to 2d
-    .arraySync()
-    // Group by "K", sum prediction differences
-    .reduce((prevDiffs, [tK, tLabel, ...tFeatures]) => {
-        const tDiff = Math.abs(tLabel - knn(tf.stack(tFeatures), tK));
-        const lastDiffIdx = prevDiffs.length - 1;
-        const [lastDiffTk, lastDiffVal] = lastDiffIdx > -1?prevDiffs[lastDiffIdx]:[];
-        // console.log(lastDiffTk, lastDiffVal, tK, tDiff);
-        if (lastDiffTk === tK) {
-            prevDiffs[lastDiffIdx] = [tK, (lastDiffVal || 0) + tDiff];
-        } else {
-            prevDiffs.push([tK, tDiff]);
-        }
-        console.clear();
-        console.table(prevDiffs);
-        return prevDiffs;
-    }, [])
-    // sort from smaller to bigger
-    .sort((diffA, diffB) => diffA[1] - diffB[1]);
-    console.clear();
-    console.table(tests);
-    return tf.stack(tests);
+    const numberOfKs = rEnd - 1 - rBegin;
+    const kArray = [...Array(numberOfKs)].fill(null);
+    const tArray = [...Array(numberOfTests)].fill(null);
+    const tests = tf.tensor(tArray.map((_, tIdx) =>
+        kArray.map((_, kIdx) => knn(testFeatures.slice([tIdx, 0], [1, -1]), rBegin + kIdx))
+    ));
+    const results = tf.stack(
+        tests
+            // shape: [tests, k's]
+            .unstack(1)
+            .map(testPredictions =>  tf.metrics.meanSquaredError(testLabels, testPredictions.expandDims(1)))
+    , 1)
+        // sum of mse for each K
+        .sum(1)
+        .unstack()
+        // [k, mseSum]
+        .map((mseSum, kIdx) => ([kIdx + rBegin, mseSum.arraySync()]))
+        // sort from smaller to biggest
+        .sort((prev, next) => prev[1] - next[1]);
+    console.table(results);
+    return results;
 }
 
 function predict(input, k = 10) {
