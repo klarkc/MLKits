@@ -1,4 +1,5 @@
 require('@tensorflow/tfjs-node');
+const yargs = require('yargs');
 const tf = require('@tensorflow/tfjs');
 const loadCsv = require('./load-csv');
 const splitTest = 10;
@@ -62,8 +63,22 @@ function accuracyOfKs([rBegin, rEnd] = [1, 20]) {
 
 function predict(input, k = 10) {
     const prediction = knn(input, k) ;
-    console.log('prediction', prediction);
+    console.log('prediction of', input.arraySync(), 'with k', k, 'is', prediction);
 }
 
-accuracyOfKs();
-// predict(tf.tensor([47.4231, -122.200]));
+yargs
+    .command(['accuracy [kBegin] [kEnd]'], 'show accuracy', (yargs) => {
+        yargs
+            .positional('kBegin', {type: Number, default: 1})
+            .positional('kEnd', { type: Number, default: 20 })
+        accuracyOfKs([yargs.argv.kBegin, yargs.argv.kEnd]);
+    })
+    .command('predict [features..]', 'predicts', (yargs) => {
+        yargs
+        .option('k', { type: Number, default: 10 })
+        .positional('features', { type: Array, default: [47.4231, -122.200] })
+        predict(tf.tensor(yargs.argv.features), yargs.argv.k);
+    })
+    .demandCommand()
+    .help()
+    .argv;
