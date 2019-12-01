@@ -3,7 +3,7 @@ const yargs = require('yargs');
 const tf = require('@tensorflow/tfjs');
 const loadCsv = require('./load-csv');
 
-function prepare(numberOfTests = 10, dataColumns = ['lat', 'long']) {
+function prepare(dataColumns = ['lat', 'long'], numberOfTests = 10) {
     const csv = loadCsv('kc_house_data.csv', {
         shuffle: true,
         splitTest: numberOfTests,
@@ -14,12 +14,24 @@ function prepare(numberOfTests = 10, dataColumns = ['lat', 'long']) {
     const labels = tf.tensor(csv.labels);
     const testFeatures = tf.tensor(csv.testFeatures);
     const testLabels = tf.tensor(csv.testLabels);
+    
+    function standardizate(tensor) {
+        const {mean, variance} = tf.moments(tensor, 0);
+        return tensor
+            .sub(mean)
+            .div(variance.pow(.5));
+    }
 
     function knn(testPoint, k) {
         // d = (d1² + d2²) ** 0.5
         // d = (fLat - lLat - fLon - lLon)² + ... ** 0.5
-        return features
-            .sub(testPoint)
+        // features.print();
+        testPoint.print();
+        const stded = standardizate(features.concat(testPoint));
+        const stFeats = stded.slice([0,0], [stded.shape[0] - 1, -1]);
+        const stTestPoint = stded.slice([stded.shape[0] - 1, 0], [1, -1]);
+        return stFeats
+            .sub(stTestPoint)
             .pow(2)
             .sum(1) // sum d1², d2²
             .pow(.5) // ** 0.5
@@ -71,19 +83,20 @@ function prepare(numberOfTests = 10, dataColumns = ['lat', 'long']) {
 yargs
     .command(['accuracy [kBegin] [kEnd]'], 'show accuracy', (yargs) => {
         yargs
-            .positional('kBegin', {type: Number, default: 1})
-            .positional('kEnd', { type: Number, default: 20 })
-            .option('tests', { type: Number, default: 10 })
-            .option('features', { type: Array, default: ['lat', 'long'] })
-        prepare(yargs.argv.tests, yargs.argv.features).
+            .positional('kBegin', {type: 'number', default: 1})
+            .positional('kEnd', { type: 'number', default: 20 })
+            .option('tests', { type: 'number', default: 10 })
+            .option('features', { type: 'array', default: ['lat', 'long'] })
+        prepare(yargs.argv.feature, yargs.argv.tests).
             accuracyOfKs([yargs.argv.kBegin, yargs.argv.kEnd]);
     })
-    .command('predict [features..]', 'predicts', (yargs) => {
+    .command('predict <inputs..>', 'predicts with inputs', (yargs) => {
         yargs
-        .option('k', { type: Number, default: 10 })
-        .positional('features', { type: Array, default: [47.4231, -122.200] })
-        prepare()
-            .predict(tf.tensor(yargs.argv.features), yargs.argv.k);
+        .option('k', { type: 'number', default: 10 })
+        .option('features', { type: 'array', default: ['lat' , 'long']})
+        .option('inputs', {type: 'array', default: [47.4231, -122.200]})
+    prepare(yargs.argv.feature)
+            .predict(tf.tensor(yargs.argv.inputs), yargs.argv.k);
     })
     .demandCommand()
     .help()
