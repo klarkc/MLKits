@@ -25,9 +25,7 @@ function prepare(dataColumns = ['lat', 'long'], numberOfTests = 10) {
     function knn(testPoint, k) {
         // d = (d1² + d2²) ** 0.5
         // d = (fLat - lLat - fLon - lLon)² + ... ** 0.5
-        features.print();
-        testPoint.print();
-        const stded = standardizate(features.concat(testPoint));
+        const stded = standardizate(features.concat(testPoint.expandDims()));
         const stFeats = stded.slice([0,0], [stded.shape[0] - 1, -1]);
         const stTestPoint = stded.slice([stded.shape[0] - 1, 0], [1, -1]);
         return stFeats
@@ -90,7 +88,7 @@ yargs
         prepare(yargs.argv.features, yargs.argv.tests).
             accuracyOfKs([yargs.argv.kBegin, yargs.argv.kEnd]);
     })
-    .command('predict <inputs..>', 'predicts with inputs', (yargs) => {
+    .command('predict', 'predicts with inputs', (yargs) => {
         yargs
         .option('k', { type: 'number', default: 10 })
         .option('features', { type: 'array', default: ['lat' , 'long']})
