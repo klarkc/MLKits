@@ -25,7 +25,7 @@ function prepare(dataColumns = ['lat', 'long'], numberOfTests = 10) {
     function knn(testPoint, k) {
         // d = (d1² + d2²) ** 0.5
         // d = (fLat - lLat - fLon - lLon)² + ... ** 0.5
-        // features.print();
+        features.print();
         testPoint.print();
         const stded = standardizate(features.concat(testPoint));
         const stFeats = stded.slice([0,0], [stded.shape[0] - 1, -1]);
@@ -87,7 +87,7 @@ yargs
             .positional('kEnd', { type: 'number', default: 20 })
             .option('tests', { type: 'number', default: 10 })
             .option('features', { type: 'array', default: ['lat', 'long'] })
-        prepare(yargs.argv.feature, yargs.argv.tests).
+        prepare(yargs.argv.features, yargs.argv.tests).
             accuracyOfKs([yargs.argv.kBegin, yargs.argv.kEnd]);
     })
     .command('predict <inputs..>', 'predicts with inputs', (yargs) => {
@@ -95,7 +95,7 @@ yargs
         .option('k', { type: 'number', default: 10 })
         .option('features', { type: 'array', default: ['lat' , 'long']})
         .option('inputs', {type: 'array', default: [47.4231, -122.200]})
-    prepare(yargs.argv.feature)
+    prepare(yargs.argv.features)
             .predict(tf.tensor(yargs.argv.inputs), yargs.argv.k);
     })
     .demandCommand()
