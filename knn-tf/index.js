@@ -38,7 +38,7 @@ function prepare(numberOfTests = 10, dataColumns = ['lat', 'long']) {
 
     function accuracyOfKs([rBegin, rEnd] = [1, 20]) {
         const numberOfKs = rEnd + 1 - rBegin;
-        console.log('Running accuracy tests...', numberOfTests, 'tests', numberOfKs, 'K\'s');
+        console.log('Running accuracy tests...', dataColumns, 'features', numberOfTests, 'tests', numberOfKs, 'K\'s');
         const kArray = [...Array(numberOfKs)].fill(null);
         const tArray = [...Array(numberOfTests)].fill(null);
         const tests = tf.tensor(tArray.map((_, tIdx) =>
