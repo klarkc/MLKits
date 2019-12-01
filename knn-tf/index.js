@@ -3,11 +3,11 @@ const yargs = require('yargs');
 const tf = require('@tensorflow/tfjs');
 const loadCsv = require('./load-csv');
 
-function prepare(numberOfTests = 10) {
+function prepare(numberOfTests = 10, dataColumns = ['lat', 'long']) {
     const csv = loadCsv('kc_house_data.csv', {
         shuffle: true,
         splitTest: numberOfTests,
-        dataColumns: ['lat', 'long'],
+        dataColumns,
         labelColumns: ['price'],
     });
     const features = tf.tensor(csv.features);
@@ -74,7 +74,8 @@ yargs
             .positional('kBegin', {type: Number, default: 1})
             .positional('kEnd', { type: Number, default: 20 })
             .option('tests', { type: Number, default: 10 })
-        prepare(yargs.argv.tests).
+            .option('features', { type: Array, default: ['lat', 'long'] })
+        prepare(yargs.argv.tests, yargs.argv.features).
             accuracyOfKs([yargs.argv.kBegin, yargs.argv.kEnd]);
     })
     .command('predict [features..]', 'predicts', (yargs) => {
