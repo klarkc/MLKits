@@ -25,6 +25,7 @@ function prepare(dataColumns = ['lat', 'long'], numberOfTests = 10) {
     function knn(testPoint, k) {
         // d = (d1² + d2²) ** 0.5
         // d = (fLat - lLat - fLon - lLon)² + ... ** 0.5
+        // console.log('knn', testPoint.arraySync(), k);
         const stded = standardizate(features.concat(testPoint.expandDims()));
         const stFeats = stded.slice([0,0], [stded.shape[0] - 1, -1]);
         const stTestPoint = stded.slice([stded.shape[0] - 1, 0], [1, -1]);
@@ -52,7 +53,7 @@ function prepare(dataColumns = ['lat', 'long'], numberOfTests = 10) {
         const kArray = [...Array(numberOfKs)].fill(null);
         const tArray = [...Array(numberOfTests)].fill(null);
         const tests = tf.tensor(tArray.map((_, tIdx) =>
-            kArray.map((_, kIdx) => knn(testFeatures.slice([tIdx, 0], [1, -1]).reshape([3]), rBegin + kIdx))
+            kArray.map((_, kIdx) => knn(testFeatures.slice([tIdx, 0], [1, -1]).reshape([-1]), rBegin + kIdx))
         ));
         const results = tf.stack(
             tests
