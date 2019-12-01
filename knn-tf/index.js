@@ -61,8 +61,9 @@ function prepare(dataColumns = ['lat', 'long'], numberOfTests = 10) {
             .unstack(1)
             .map(testPredictions =>  tf.metrics.meanAbsolutePercentageError(testLabels.reshape([-1]), testPredictions))
         )
+            // cur shape: [k'sErrors]
             .unstack()
-            // generate [k, mseSum]
+            // generate fancy [k, mseSum]
             .map((mseSum, kIdx) => ([kIdx + rBegin, mseSum.arraySync()]))
             // sort from smaller to biggest
             .sort((prev, next) => prev[1] - next[1]);
