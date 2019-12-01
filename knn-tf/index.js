@@ -52,7 +52,7 @@ function prepare(dataColumns = ['lat', 'long'], numberOfTests = 10) {
         const kArray = [...Array(numberOfKs)].fill(null);
         const tArray = [...Array(numberOfTests)].fill(null);
         const tests = tf.tensor(tArray.map((_, tIdx) =>
-            kArray.map((_, kIdx) => knn(testFeatures.slice([tIdx, 0], [1, -1]), rBegin + kIdx))
+            kArray.map((_, kIdx) => knn(testFeatures.slice([tIdx, 0], [1, -1]).reshape([3]), rBegin + kIdx))
         ));
         const results = tf.stack(
             tests
