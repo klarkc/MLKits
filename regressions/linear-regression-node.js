@@ -1,5 +1,3 @@
-const tf = require('@tensorflow/tfjs');
-
 function buildGradientDescenter(features, labels, options) {
     return ({m, b}) => {
         // guess is result of f(x) = mx + b, x is the feature
