@@ -1,62 +1,42 @@
 const tf = require('@tensorflow/tfjs');
 
 function buildGradientDescenter(features, labels, options) {
-    return ({ m, b }) => {
-        // guess is result of f(x) = mx + b, x is the feature
-        const currentFeatureGuesses = features
-            .map(([feature]) => {
-                // console.log(`m(${m}) * x(${feature}) + b(${b})`);
-                return m * feature + b;
-            });
-        // console.log(currentFeatureGuesses);
-
-        // slope of MSE in respect to B
-        // 2/n * SUM(guess - actual) | n is number of rows
-        const bSlope = currentFeatureGuesses
-            .map((guess, index) => {
-                const actual = labels[index][0];
-                // console.log('guess', guess, 'actual', actual);
-                return guess - actual;
-            })
-            .reduce((sum, res) => sum + res, 0) * (2 / features.length);
-        // slope of MSE in respect to M
-        // 2/n * SUM(-x * [actual - guess]) | n is number of rows, x is feature at row
-        const mSlope = currentFeatureGuesses
-            .map((guess, index) => {
-                const actual = labels[index][0];
-                // console.log('x', features[index][0], 'guess', guess, 'actual', actual);
-                return -1 * features[index][0] * (actual - guess);
-            })
-            .reduce((sum, res) => sum + res, 0) * (2 / features.length)
-        console.log('m', m, mSlope, 'b', b, bSlope);
-        return {
-            m: m - mSlope * options.learningRate,
-            b: b - bSlope * options.learningRate
-        }
+    const tFeatures = tf.tensor(features);
+    const tLabels = tf.tensor(labels);
+    const oneFeatures = tf.ones([tFeatures.shape[0], 1]).concat(tFeatures, 1);
+    return (weights) => {
+        // slope of MSE with respect to m and b
+        // (Features * ((Features - Weights) - Labels) / n
+        const currentGuesses = oneFeatures.matMul(weights);
+        const differences = currentGuesses.sub(tLabels);
+        const slopes = oneFeatures
+            .transpose()
+            .matMul(differences)
+            .div(oneFeatures.shape[0]);
+        const lrSlopes = slopes.mul(options.learningRate);
+        return weights.sub(lrSlopes);
     }
 }
 
 function buildTrainer(gradientDescenter, buildModel, options) {
-    // initialize traning array
-    const data = Array(options.iterations).fill(null);
-
+    let zeroWeights = tf.zeros([2, 1]);   
     return () => {
-        // find ideal m, b
-        const {m, b} = data.reduce(
-            prev => gradientDescenter(prev),
-            { m: 0, b: 0 },
-        );
-        return buildModel(m, b);
+        let weights = zeroWeights;
+        // find ideal b, m
+        for (let i = options.iterations; i > 0; i--) {
+            weights = gradientDescenter(weights);       
+        }
+        return buildModel(weights);
     }
 }
 
-function buildModel(m, b) {
+function buildModel(weights) {
     return {
-        m,
-        b,
-        predict(feature) {
+        weights,
+        async predict(feature) {
+            const [b, m] = await weights.data();
             const result = m * feature + b;
-            console.log('result', result);
+            return result;
         }
     }
 }

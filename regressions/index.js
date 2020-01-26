@@ -13,5 +13,12 @@ const {features, labels, testFeatures, testLabels} = loadCSV('./cars.csv', {
 
 const lr = LinearRegression(features, labels, { learningRate: 0.000008, iterations: 1000 });
 const model = lr.train();
-console.log('model', model);
-model.predict(130);
+
+// print weights
+model.weights.print();
+
+const value = 130;
+console.log('prediction', value);
+model.predict(value).then(
+    res =>console.log('result', res)
+);
