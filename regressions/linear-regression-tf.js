@@ -29,10 +29,10 @@ function buildTrainer(gradientDescenter, buildModel, options) {
         // find ideal b, m
         for (let i = options.iterations; i > 0; i--) {
             weights = gradientDescenter(weights);       
-            if (tf.isInf(weights).shape[0] > 0) {
-                throw Error('Infinity weight detected, try lowering learning rate');
-            }
         }
+        weights.isNaN().any().data().then(([hasNan]) => {
+            if (hasNan) console.warn('Infinity weight detected, try lowering learning rate');
+        });
         return buildModel(weights);
     }
 }
