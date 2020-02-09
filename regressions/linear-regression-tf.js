@@ -1,9 +1,13 @@
 const tf = require('@tensorflow/tfjs');
 
+function prependOnes(tensor) {
+    return tf.ones([tensor.shape[0], 1]).concat(tensor, 1);
+}
+
 function buildGradientDescenter(features, labels, options) {
     const tFeatures = tf.tensor(features);
     const tLabels = tf.tensor(labels);
-    const oneFeatures = tf.ones([tFeatures.shape[0], 1]).concat(tFeatures, 1);
+    const oneFeatures = prependOnes(tFeatures);
     return (weights) => {
         // slope of MSE with respect to m and b
         // (Features * ((Features - Weights) - Labels) / n
@@ -30,21 +34,53 @@ function buildTrainer(gradientDescenter, buildModel, options) {
     }
 }
 
-function buildModel(weights) {
-    return {
-        weights,
-        async predict(feature) {
-            const [b, m] = await weights.data();
-            const result = m * feature + b;
-            return result;
-        }
+function buildTester(testFeatures, testLabels) {
+    // Coefficient of Determination formula
+    // R ² = 1 - SSres / SStot
+    // SS = Sum of Squares
+    // SSres = sum((Actual - Avarage)²)
+    // SStot = sum((Actual - Predicted)²)
+    const tFeatures = tf.tensor(testFeatures);
+    const oneFeatures = prependOnes(tFeatures);
+    const tLabels = tf.tensor(testLabels);
+    return (weights) => {
+        const avarage = tLabels.mean();
+        const ssRes = tFeatures
+            .sub(avarage)
+            .pow(2)
+            .sum();
+        const predictions = oneFeatures.matMul(weights);
+        const ssTot = tLabels
+            .sub(predictions)
+            .pow(2)
+            .sum();
+        const r2 = tf.tensor([1]).sub(ssRes.div(ssTot));
+        return r2;
     }
+}
+
+function createModelBuilder(test) {
+    return weights => {
+        const model = {
+            weights,
+            accuracy: test(weights),
+            async predict(feature) {
+                const [b, m] = await weights.data();
+                const result = m * feature + b;
+                return result;
+            },
+        };
+
+        return model;
+    };
 }
 
 module.exports = function LinearRegression(features, labels, options = {}) {
     const defOptions = { learningRate: 0.1, iterations: 1000 };
     const myOptions = { ...defOptions, ...options };
     const gradientDescenter = buildGradientDescenter(features, labels, myOptions);
+    const tester = buildTester(features, labels);
+    const buildModel = createModelBuilder(tester);
     const train = buildTrainer(gradientDescenter, buildModel, myOptions);
 
     return {

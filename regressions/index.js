@@ -17,6 +17,9 @@ const model = lr.train();
 // print weights
 model.weights.print();
 
+// print accuracy (only for tf)
+model.accuracy.print();
+
 const value = 130;
 console.log('prediction', value);
 model.predict(value).then(
