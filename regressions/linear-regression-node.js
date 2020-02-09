@@ -28,7 +28,7 @@ function buildGradientDescenter(features, labels, options) {
                 return -1 * features[index][0] * (actual - guess);
             })
             .reduce((sum, res) => sum + res, 0) * (2 / features.length)
-        console.log('m', m, mSlope, 'b', b, bSlope);
+        // console.log('m', m, mSlope, 'b', b, bSlope);
         return {
             m: m - mSlope * options.learningRate,
             b: b - bSlope * options.learningRate
@@ -46,17 +46,22 @@ function buildTrainer(gradientDescenter, buildModel, options) {
             prev => gradientDescenter(prev),
             { m: 0, b: 0 },
         );
-        return buildModel(m, b);
+        return buildModel([m, b]);
     }
 }
 
-function buildModel(m, b) {
+function buildModel(weights) {
     return {
-        m,
-        b,
-        predict(feature) {
+        weights: {
+            data: weights,
+            print() {
+                console.log(weights);
+            }
+        },
+        async predict(feature) {
+            const [m, b] = weights;
             const result = m * feature + b;
-            console.log('result', result);
+            return result;
         }
     }
 }
