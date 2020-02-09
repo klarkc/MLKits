@@ -18,16 +18,17 @@ function buildGradientDescenter(features, labels, options) {
                 // console.log('guess', guess, 'actual', actual);
                 return guess - actual;
             })
-            .reduce((sum, res) => sum + res, 0) * (2 / features.length);
+            .reduce((sum, res) => sum + res, 0) * (1 / features.length);
         // slope of MSE in respect to M
         // 2/n * SUM(-x * [actual - guess]) | n is number of rows, x is feature at row
+        // we changed 2/n to 1/n because it does not matter
         const mSlope = currentFeatureGuesses
             .map((guess, index) => {
                 const actual = labels[index][0];
                 // console.log('x', features[index][0], 'guess', guess, 'actual', actual);
                 return -1 * features[index][0] * (actual - guess);
             })
-            .reduce((sum, res) => sum + res, 0) * (2 / features.length)
+            .reduce((sum, res) => sum + res, 0) * (1 / features.length)
         // console.log('m', m, mSlope, 'b', b, bSlope);
         return {
             m: m - mSlope * options.learningRate,
@@ -46,7 +47,7 @@ function buildTrainer(gradientDescenter, buildModel, options) {
             prev => gradientDescenter(prev),
             { m: 0, b: 0 },
         );
-        return buildModel([m, b]);
+        return buildModel([b, m]);
     }
 }
 
@@ -59,7 +60,7 @@ function buildModel(weights) {
             }
         },
         async predict(feature) {
-            const [m, b] = weights;
+            const [b, m] = weights;
             const result = m * feature + b;
             return result;
         }
