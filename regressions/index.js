@@ -11,7 +11,7 @@ const {features, labels, testFeatures, testLabels} = loadCSV('./cars.csv', {
     labelColumns: ['mpg']
 });
 
-const lr = LinearRegression(features, labels, { learningRate: 0.000008, iterations: 1000 });
+const lr = LinearRegression(features, labels, { learningRate: 0.001, iterations: 100 });
 const model = lr.train();
 
 // print weights
@@ -23,7 +23,7 @@ console.log('accuracy:');
 model.accuracy.print();
 
 const value = 130;
-console.log('prediction', value);
+console.log('prediction:', value);
 model.predict(value).then(
-    res =>console.log('result', res)
+    res =>console.log('result:', res)
 );
