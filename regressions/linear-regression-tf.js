@@ -38,20 +38,20 @@ function buildTester(testFeatures, testLabels) {
     // Coefficient of Determination formula
     // R ² = 1 - SSres / SStot
     // SS = Sum of Squares
-    // SSres = sum((Actual - Avarage)²)
-    // SStot = sum((Actual - Predicted)²)
+    // SSres = sum((Actual - Predicted)²)
+    // SStot = sum((Actual - Avarage)²)
     const tFeatures = tf.tensor(testFeatures);
     const oneFeatures = prependOnes(tFeatures);
     const tLabels = tf.tensor(testLabels);
     return (weights) => {
-        const avarage = tLabels.mean();
-        const ssRes = tFeatures
-            .sub(avarage)
+        const predictions = oneFeatures.matMul(weights);
+        const ssRes = tLabels
+            .sub(predictions)
             .pow(2)
             .sum();
-        const predictions = oneFeatures.matMul(weights);
-        const ssTot = tLabels
-            .sub(predictions)
+        const avarage = tLabels.mean();
+        const ssTot = tFeatures
+            .sub(avarage)
             .pow(2)
             .sum();
         const r2 = tf.tensor([1]).sub(ssRes.div(ssTot));

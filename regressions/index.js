@@ -15,9 +15,11 @@ const lr = LinearRegression(features, labels, { learningRate: 0.000008, iteratio
 const model = lr.train();
 
 // print weights
+console.log('weights:');
 model.weights.print();
 
 // print accuracy (only for tf)
+console.log('accuracy:');
 model.accuracy.print();
 
 const value = 130;
