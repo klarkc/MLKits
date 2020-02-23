@@ -11,7 +11,7 @@ const {features, labels, testFeatures, testLabels} = loadCSV('./cars.csv', {
     labelColumns: ['mpg']
 });
 
-const lr = LinearRegression(features, labels, { learningRate: 0.0001, iterations: 100 });
+const lr = LinearRegression(features, testFeatures, labels, testLabels, { learningRate: 0.0001, iterations: 100 });
 const model = lr.train();
 
 // print weights
