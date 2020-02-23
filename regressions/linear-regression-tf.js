@@ -68,13 +68,15 @@ function buildTester(testFeatures, testLabels, standard) {
     }
 }
 
-function createModelBuilder(test) {
+function createModelBuilder(test, standard) {
     return weights => {
         const model = {
             weights,
             accuracy: test(weights),
-            async predict(feature) {
+            async predict(...features) {
+                const tFeatures = standard(tf.tensor(features));
                 const [b, m] = await weights.data();
+                const [feature] = await tFeatures.data();
                 const result = m * feature + b;
                 return result;
             },
@@ -90,7 +92,7 @@ module.exports = function LinearRegression(features, testFeatures, labels, testL
     const standard = buildStandardnizer(features);
     const gradientDescenter = buildGradientDescenter(features, labels, standard, myOptions);
     const tester = buildTester(testFeatures, testLabels, standard);
-    const modelBuilder = createModelBuilder(tester);
+    const modelBuilder = createModelBuilder(tester, standard);
     const train = buildTrainer(gradientDescenter, modelBuilder, myOptions);
 
     return {
