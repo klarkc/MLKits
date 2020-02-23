@@ -43,16 +43,16 @@ function buildTrainer(gradientDescenter, buildModel, options) {
     }
 }
 
-function buildTester(testFeatures, testLabels, standard) {
+function createTesterBuilder(standard) {
     // Coefficient of Determination formula
     // R ² = 1 - SSres / SStot
     // SS = Sum of Squares
     // SSres = sum((Actual - Predicted)²)
     // SStot = sum((Actual - Avarage)²)
-    const tFeatures = standard(tf.tensor(testFeatures));
-    const oneFeatures = prependOnes(tFeatures);
-    const tLabels = tf.tensor(testLabels);
-    return (weights) => {
+    return (weights) => (testFeatures, testLabels) => {
+        const tFeatures = standard(tf.tensor(testFeatures));
+        const oneFeatures = prependOnes(tFeatures);
+        const tLabels = tf.tensor(testLabels);
         const predictions = oneFeatures.matMul(weights);
         const ssRes = tLabels
             .sub(predictions)
@@ -68,11 +68,11 @@ function buildTester(testFeatures, testLabels, standard) {
     }
 }
 
-function createModelBuilder(test, standard) {
+function createModelBuilder(buildTester, standard) {
     return weights => {
         const model = {
             weights,
-            accuracy: test(weights),
+            test: buildTester(weights),
             async predict(...features) {
                 const tFeatures = standard(tf.tensor(features));
                 const [b, m] = await weights.data();
@@ -86,13 +86,13 @@ function createModelBuilder(test, standard) {
     };
 }
 
-module.exports = function LinearRegression(features, testFeatures, labels, testLabels, options = {}) {
+module.exports = function LinearRegression(features, labels, options = {}) {
     const defOptions = { learningRate: 0.1, iterations: 1000 };
     const myOptions = { ...defOptions, ...options };
     const standard = buildStandardnizer(features);
     const gradientDescenter = buildGradientDescenter(features, labels, standard, myOptions);
-    const tester = buildTester(testFeatures, testLabels, standard);
-    const modelBuilder = createModelBuilder(tester, standard);
+    const testerBuilder = createTesterBuilder(standard);
+    const modelBuilder = createModelBuilder(testerBuilder, standard);
     const train = buildTrainer(gradientDescenter, modelBuilder, myOptions);
 
     return {
