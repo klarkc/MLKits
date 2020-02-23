@@ -10,7 +10,7 @@ function buildGradientDescenter(features, labels, options) {
     const oneFeatures = prependOnes(tFeatures);
     return (weights) => {
         // slope of MSE with respect to m and b
-        // (Features * ((Features - Weights) - Labels) / n
+        // (Features * ((Features * Weights) - Labels) / n
         const currentGuesses = oneFeatures.matMul(weights);
         const differences = currentGuesses.sub(tLabels);
         const slopes = oneFeatures
@@ -83,8 +83,8 @@ module.exports = function LinearRegression(features, labels, options = {}) {
     const myOptions = { ...defOptions, ...options };
     const gradientDescenter = buildGradientDescenter(features, labels, myOptions);
     const tester = buildTester(features, labels);
-    const buildModel = createModelBuilder(tester);
-    const train = buildTrainer(gradientDescenter, buildModel, myOptions);
+    const modelBuilder = createModelBuilder(tester);
+    const train = buildTrainer(gradientDescenter, modelBuilder, myOptions);
 
     return {
         gradientDescenter,
