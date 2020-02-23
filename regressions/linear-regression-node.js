@@ -47,6 +47,9 @@ function buildTrainer(gradientDescenter, buildModel, options) {
             prev => gradientDescenter(prev),
             { m: 0, b: 0 },
         );
+        if (Number.isNaN(m) || Number.isNaN(b)) {
+            console.warn('Infinity weight detected, try lowering learning rate');
+        }
         return buildModel([b, m]);
     }
 }
