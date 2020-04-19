@@ -7,7 +7,7 @@ const LinearRegression = require('./linear-regression-tf');
 const {features, labels, testFeatures, testLabels} = loadCSV('./cars.csv', {
     shuffle: true,
     splitTest: 50,
-    dataColumns: ['horsepower'],
+    dataColumns: ['horsepower', 'weight', 'displacement'],
     labelColumns: ['mpg']
 });
 
@@ -20,10 +20,11 @@ model.weights.print();
 
 // print accuracy (only for tf)
 console.log('accuracy:');
-model.test(testFeatures, testLabels).print();
+const test = model.test(testFeatures, testLabels);
+test.result.print();
+test.r2.print();
 
-const value = 130;
-console.log('prediction:', value);
-model.predict(value).then(
-    res =>console.log('result:', res)
-);
+const values = [130, 1.75, 307];
+console.log('prediction:', values);
+const prediction = model.predict(...values);
+prediction.print();

@@ -10,9 +10,7 @@ function buildStandardnizer(baseFeatures) {
     return features => features.sub(mean).div(variance.pow(0.5));
 }
 
-function buildGradientDescenter(features, labels, standard, options) {
-    const tFeatures = standard(tf.tensor(features));
-    const tLabels = tf.tensor(labels);
+function buildGradientDescenter(tFeatures, tLabels, options) {
     const oneFeatures = prependOnes(tFeatures);
     return (weights) => {
         // slope of MSE with respect to m and b
@@ -28,8 +26,8 @@ function buildGradientDescenter(features, labels, standard, options) {
     }
 }
 
-function buildTrainer(gradientDescenter, buildModel, options) {
-    let zeroWeights = tf.zeros([2, 1]);   
+function buildTrainer(featuresCount, gradientDescenter, buildModel, options) {
+    let zeroWeights = tf.zeros([featuresCount + 1, 1]);   
     return () => {
         let weights = zeroWeights;
         // find ideal b, m
@@ -50,25 +48,25 @@ function createTesterBuilder(standard) {
     // SSres = sum((Actual - Predicted)²)
     // SStot = sum((Actual - Avarage)²)
     return (weights) => (testFeatures, testLabels) => {
-        const tFeatures = standard(tf.tensor(testFeatures));
-        const oneFeatures = prependOnes(tFeatures);
+        const tFeatures = tf.tensor(testFeatures);
+        const stFeatures = standard(tFeatures);
+        const oneFeatures = prependOnes(stFeatures);
         const tLabels = tf.tensor(testLabels);
         const predictions = oneFeatures.matMul(weights);
-        tf.tensor(testFeatures)
-            .concat(predictions, 1)
-            .concat(tLabels, 1)
-            .print();
         const ssRes = tLabels
             .sub(predictions)
             .pow(2)
             .sum();
         const avarage = tLabels.mean();
-        const ssTot = tFeatures
+        const ssTot = stFeatures
             .sub(avarage)
             .pow(2)
             .sum();
         const r2 = tf.tensor([1]).sub(ssRes.div(ssTot));
-        return r2;
+        const result = tFeatures
+                            .concat(predictions, 1)
+                            .concat(tLabels, 1);
+        return { r2, result };
     }
 }
 
@@ -77,12 +75,15 @@ function createModelBuilder(buildTester, standard) {
         const model = {
             weights,
             test: buildTester(weights),
-            async predict(...features) {
-                const tFeatures = standard(tf.tensor(features));
-                const [b, m] = await weights.data();
-                const [feature] = await tFeatures.data();
-                const result = m * feature + b;
-                return result;
+            predict(...features) {
+                // const [b, m] = await weights.data();
+                // const [feature] = await tFeatures.data();
+                // const result = m * feature + b;
+                const tFeatures = tf.tensor(features).expandDims();
+                const stFeatures = standard(tFeatures);
+                const oneFeatures = prependOnes(stFeatures);
+                const predictions = oneFeatures.matMul(weights);
+                return predictions.sum();
             },
         };
 
@@ -94,10 +95,13 @@ module.exports = function LinearRegression(features, labels, options = {}) {
     const defOptions = { learningRate: 0.1, iterations: 1000 };
     const myOptions = { ...defOptions, ...options };
     const standard = buildStandardnizer(features);
-    const gradientDescenter = buildGradientDescenter(features, labels, standard, myOptions);
+    const tFeatures = standard(tf.tensor(features));
+    const tLabels = tf.tensor(labels);
+
+    const gradientDescenter = buildGradientDescenter(tFeatures, tLabels, myOptions);
     const testerBuilder = createTesterBuilder(standard);
     const modelBuilder = createModelBuilder(testerBuilder, standard);
-    const train = buildTrainer(gradientDescenter, modelBuilder, myOptions);
+    const train = buildTrainer(tFeatures.shape[1], gradientDescenter, modelBuilder, myOptions);
 
     return {
         gradientDescenter,
