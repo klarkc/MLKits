@@ -16,7 +16,7 @@ function buildGradientDescenter(features, labels, standard, options) {
     const oneFeatures = prependOnes(tFeatures);
     return (weights) => {
         // slope of MSE with respect to m and b
-        // (Features * ((Features * Weights) - Labels) / n
+        // (Features * (Features * Weights - Labels)) / n
         const currentGuesses = oneFeatures.matMul(weights);
         const differences = currentGuesses.sub(tLabels);
         const slopes = oneFeatures
