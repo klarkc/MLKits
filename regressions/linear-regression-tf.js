@@ -54,6 +54,10 @@ function createTesterBuilder(standard) {
         const oneFeatures = prependOnes(tFeatures);
         const tLabels = tf.tensor(testLabels);
         const predictions = oneFeatures.matMul(weights);
+        tf.tensor(testFeatures)
+            .concat(predictions, 1)
+            .concat(tLabels, 1)
+            .print();
         const ssRes = tLabels
             .sub(predictions)
             .pow(2)
